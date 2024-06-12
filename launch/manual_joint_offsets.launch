@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="max_offset" default="1.0" />
+
+    <param name="robot_description_for_offsets" command="$(find manual_joint_offsets)/scripts/prepare_robot_description.sh '$(find tams_pr2_description)/robots/tams_pr2.urdf.xacro' $(arg max_offset)"/>
+
+    <!-- joint offset publisher -->
+    <node name="jop" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
+        <remap from="robot_description" to="robot_description_for_offsets"/>
+        <remap from="joint_states" to="joint_states_offsets"/>
+    </node>
+
+    <!-- joint offset interpreter -->
+    <node name="joi" pkg="manual_joint_offsets" type="joint_offset_interpreter.py">
+        <remap from="joint_states" to="joint_states"/>
+        <remap from="joint_states_offsets" to="joint_states_offsets"/>
+    </node>
+</launch>
