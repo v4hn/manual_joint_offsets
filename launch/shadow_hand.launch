@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(dirname)/manual_joint_offsets.launch" />
+
+  <group ns="/hand/rh">
+    <node name="shadow_raw_sensor_interpreter" pkg="manual_joint_offsets" type="shadow_hand_raw_sensor_joint_readings.py" />
+  </group>
+</launch>
