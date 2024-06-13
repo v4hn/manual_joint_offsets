@@ -12,5 +12,8 @@ xacro "$xacro_file" |
     sed "
     s@\(lower\)=\"[^\\\"]*\"@\1=\"-$limit\"@g;
     s@\(upper\)=\"[^\\\"]*\"@\1=\"$limit\"@g;
-    /safety_controller/ d
+    /safety_controller/ d;
+    s@type=\"continuous\"@type=\"revolute\"@g;
+    T;
+    a <limit lower=\"-$limit\" upper=\"$limit\" effort=\"0.0\" velocity=\"0.0\"/>
     "
