@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+import os
+import pandas as pd
+import rospy
+import threading
+
+from moveit_msgs.msg import DisplayRobotState
+from sensor_msgs.msg import JointState
+
+class SnapshotTuningCurves:
+    def __init__(self):
+        self.joint_state = None
+        self.joint_state_lock = threading.Lock()
+        self.readings = None
+        self.readings_lock = threading.Lock()
+
+        self.sub_tuned = rospy.Subscriber('display_robot_state', DisplayRobotState, self.tuned_callback)
+        self.sub_readings = rospy.Subscriber('hand/rh/joint_readings_for_calibration', JointState, self.readings_callback)
+
+    def tuned_callback(self, msg : DisplayRobotState):
+        with self.joint_state_lock:
+            self.joint_state = msg.state.joint_state
+
+    def readings_callback(self, msg):
+        with self.readings_lock:
+            self.readings = msg
+
+    def snap(self):
+        with self.joint_state_lock and self.readings_lock:
+            if self.joint_state is None or self.readings is None:
+                raise RuntimeError("Not all data available yet")
+
+            S = {}
+            for reading_i, sensorname in enumerate(self.readings.name):
+                try:
+                    js_i = next(i for i, name in enumerate(self.joint_state.name) if sensorname in name)
+                    S[sensorname] = {'position': self.joint_state.position[js_i], 'reading': self.readings.position[reading_i]}
+                except StopIteration:
+                    rospy.logerr(f"Could not find joint for sensor {j} in joint_state")
+
+            return self.readings.header.stamp.to_sec(), S
+
+
+def dump(D, file):
+    Dserial = []
+    for t, S in D:
+        for name in S:
+            Dserial.append((t, name, S[name]['position'], S[name]['reading']))
+
+    rospy.loginfo(f"Writing {len(D)} samples to '{file}'")
+
+    pd.DataFrame(Dserial, columns=['time', 'joint', 'position', 'reading']).to_csv(file, index=False)
+
+
+if __name__ == '__main__':
+    rospy.init_node('snapshot_tuning_curves')
+
+    file = rospy.get_param('~file', 'tuning_curve_samples.csv')
+
+    snapshotter = SnapshotTuningCurves()
+    D= []
+    # append a snapshot after each <enter>
+
+    while not rospy.is_shutdown():
+        try:
+            user_input = input("<Press enter to take snapshot / 'd' to dump>")
+        except (KeyboardInterrupt, EOFError):
+            print()
+            break
+
+        if user_input == 'd':
+            dump(D, file)
+        elif rospy.is_shutdown():
+            break
+        else: 
+            D.append(snapshotter.snap())
+
+        rospy.loginfo(f"Done")
+
+    dump(D, file)
