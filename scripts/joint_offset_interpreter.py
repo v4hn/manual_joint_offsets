@@ -14,13 +14,19 @@ class JointOffsetInterpreter:
         self.js_offsets = {}
         self.joint_states_offsets_lock = threading.Lock()
 
-        rospy.Subscriber('joint_states_offsets', JointState, self.joint_states_offsets_callback)
-        rospy.Subscriber('joint_states', JointState, self.joint_states_callback)
+        self.pub = rospy.Publisher('display_robot_state', DisplayRobotState, queue_size=1)
+
+        self.offset_sub = rospy.Subscriber('joint_states_offsets', JointState, self.joint_states_offsets_callback)
+        self.js_sub = rospy.Subscriber('joint_states', JointState, self.joint_states_callback)
 
     def joint_states_callback(self, msg):
         with self.joint_states_lock:
             for name,position in zip(msg.name, msg.position):
                 self.js_original[name] = position
+
+        drs = DisplayRobotState()
+        drs.state.joint_state = self.joint_states
+        self.pub.publish(drs)
 
     def joint_states_offsets_callback(self, msg):
         with self.joint_states_offsets_lock:
@@ -39,18 +45,8 @@ class JointOffsetInterpreter:
 
 def main():
     rospy.init_node('joint_offset_interpreter')
-    pub = rospy.Publisher('display_robot_state', DisplayRobotState, queue_size=1)
-
     joint_offset_interpreter = JointOffsetInterpreter()
-
-    rospy.sleep(1.0)
-    rate = rospy.Rate(10)
-    msg = DisplayRobotState()
-    while not rospy.is_shutdown():
-        joint_states = joint_offset_interpreter.joint_states
-        msg.state.joint_state = joint_states
-        pub.publish(msg)
-        rate.sleep()
+    rospy.spin()
 
 
 if __name__ == '__main__':
