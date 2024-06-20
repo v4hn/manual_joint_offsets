@@ -46,12 +46,12 @@ class SnapshotTuningCurves:
 
 
 def dump(D, file):
+    rospy.loginfo(f"Writing {len(D)} samples to '{file}'")
+
     Dserial = []
     for t, S in D:
         for name in S:
             Dserial.append((t, name, S[name]['position'], S[name]['reading']))
-
-    rospy.loginfo(f"Writing {len(D)} samples to '{file}'")
 
     pd.DataFrame(Dserial, columns=['time', 'joint', 'position', 'reading']).to_csv(file, index=False)
 
@@ -61,24 +61,38 @@ if __name__ == '__main__':
 
     file = rospy.get_param('~file', 'tuning_curve_samples.csv')
 
+    autosnap = False
+
     snapshotter = SnapshotTuningCurves()
     D= []
-    # append a snapshot after each <enter>
 
-    while not rospy.is_shutdown():
-        try:
-            user_input = input("<Press enter to take snapshot / 'd' to dump>")
-        except (KeyboardInterrupt, EOFError):
-            print()
-            break
+    autosnap_rate = None
 
-        if user_input == 'd':
-            dump(D, file)
-        elif rospy.is_shutdown():
-            break
-        else: 
-            D.append(snapshotter.snap())
+    try:
+        while not rospy.is_shutdown():
+            if not autosnap:
+                try:
+                    user_input = input("<Press enter to take snapshot / 'd' to dump / 'a' for autosnap>")
+                except EOFError:
+                    print()
+                    break
+            if user_input == 'd':
+                dump(D, file)
+            elif rospy.is_shutdown():
+                break
+            elif autosnap or user_input == 'a':
+                autosnap = True
+                D.append(snapshotter.snap())
+                print("Snap, ", end='', flush=True)
+                if autosnap_rate is None:
+                    autosnap_rate = rospy.Rate(10)
+                autosnap_rate.sleep()
+            else:
+                D.append(snapshotter.snap())
+                rospy.loginfo(f"Done")
+    except KeyboardInterrupt:
+        pass
 
-        rospy.loginfo(f"Done")
+    rospy.loginfo(f"Finalizing {len(D)} samples...")
 
     dump(D, file)
