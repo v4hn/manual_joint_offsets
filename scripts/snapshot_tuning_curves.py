@@ -8,6 +8,9 @@ import threading
 from moveit_msgs.msg import DisplayRobotState
 from sensor_msgs.msg import JointState
 
+# from hanging_threads import start_monitoring
+# monitoring_thread = start_monitoring()
+
 class SnapshotTuningCurves:
     def __init__(self):
         self.joint_state = None
