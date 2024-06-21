@@ -89,6 +89,7 @@ if __name__ == '__main__':
                 autosnap_rate.sleep()
             else:
                 D.append(snapshotter.snap())
+                dump(D, file)
                 rospy.loginfo(f"Done")
     except KeyboardInterrupt:
         pass
