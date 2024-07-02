@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
+<!-- hardware-agnostic implementation to adjust joint offsets of a urdf -->
+
 <launch>
     <arg name="max_offset" default="1.0" />
 

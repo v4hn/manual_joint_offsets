@@ -15,6 +15,7 @@ class JointOffsetInterpreter:
         self.joint_states_offsets_lock = threading.Lock()
 
         self.pub = rospy.Publisher('display_robot_state', DisplayRobotState, queue_size=1)
+        self.pub_js = rospy.Publisher('joint_states_offsetted', JointState, queue_size=1)
 
         self.offset_sub = rospy.Subscriber('joint_states_offsets', JointState, self.joint_states_offsets_callback)
         self.js_sub = rospy.Subscriber('joint_states', JointState, self.joint_states_callback)
@@ -27,6 +28,7 @@ class JointOffsetInterpreter:
         drs = DisplayRobotState()
         drs.state.joint_state = self.joint_states
         self.pub.publish(drs)
+        self.pub_js.publish(self.joint_states)
 
     def joint_states_offsets_callback(self, msg):
         with self.joint_states_offsets_lock:
