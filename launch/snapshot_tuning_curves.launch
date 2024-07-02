@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<!-- snapshotter (launch separately) -->
+<launch>
+  <node name="snapshot_tuning_curves" pkg="manual_joint_offsets" type="snapshot_tuning_curves.py" output="screen"/>
+</launch>

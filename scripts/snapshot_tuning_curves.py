@@ -31,9 +31,10 @@ class SnapshotTuningCurves:
 
     def snap(self):
         with self.joint_state_lock and self.readings_lock:
-            if self.joint_state is None or self.readings is None:
-                raise RuntimeError("Not all data available yet")
-
+            if self.joint_state is None:
+                raise RuntimeError("No joint_state available yet")
+            if self.readings is None:
+                raise RuntimeError("No readings available yet")
             S = {}
             for reading_i, sensorname in enumerate(self.readings.name):
                 try:
@@ -59,7 +60,7 @@ def dump(D, file):
 if __name__ == '__main__':
     rospy.init_node('snapshot_tuning_curves')
 
-    file = rospy.get_param('~file', 'tuning_curve_samples.csv')
+    file = rospy.get_param('manual_calibration/samples_file', 'tuning_curve_samples.csv')
 
     autosnap = False
 
@@ -67,6 +68,7 @@ if __name__ == '__main__':
     D= []
 
     autosnap_rate = None
+    autosnap_dump = 0
 
     try:
         while not rospy.is_shutdown():
@@ -84,6 +86,11 @@ if __name__ == '__main__':
                 autosnap = True
                 D.append(snapshotter.snap())
                 print("Snap, ", end='', flush=True)
+                if autosnap_dump == 0:
+                    dump(D, file)
+                    autosnap_dump = 50
+                else:
+                    autosnap_dump -= 1
                 if autosnap_rate is None:
                     autosnap_rate = rospy.Rate(10)
                 autosnap_rate.sleep()

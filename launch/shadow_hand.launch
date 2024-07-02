@@ -1,8 +1,13 @@
 <?xml version="1.0"?>
+<!-- components specific to the Shadow Dexterous Hand -->
 <launch>
   <include file="$(dirname)/manual_joint_offsets.launch" />
 
   <group ns="/hand/rh">
     <node name="shadow_raw_sensor_interpreter" pkg="manual_joint_offsets" type="shadow_hand_raw_sensor_joint_readings.py" />
   </group>
+
+  <!-- auxiliary node to plot calibration data collected with snapshot_tuning_curves -->
+  <param name="manual_calibration/samples_file" value="tuning_curve_samples.csv" />
+  <node name="plot_tuning_curve_data" pkg="manual_joint_offsets" type="plot_tuning_curve_data.py"/>
 </launch>
